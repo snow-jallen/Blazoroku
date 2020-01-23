@@ -27,13 +27,24 @@ namespace Blazoroku
 
         public IConfiguration Configuration { get; }
 
+        private static string convertUrlConnectionString(string url)
+        {
+            var uri = new Uri(url);
+            var host = uri.Host;
+            var port = uri.Port;
+            var database = uri.Segments.Last();
+            var parts = uri.AbsoluteUri.Split(':', '/', '@');
+            var user = parts[3];
+            var password = parts[4];
+
+            return $"host={host}; port={port}; database={database}; username={user}; password={password}; SSL Mode=Prefer; Trust Server Certificate=true";
+        }
+
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(
-                    Configuration.GetConnectionString("DefaultConnection")));
+            services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(convertUrlConnectionString(Configuration["POSTGRES_CONNECTION"])));
             services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddEntityFrameworkStores<ApplicationDbContext>();
             services.AddRazorPages();
